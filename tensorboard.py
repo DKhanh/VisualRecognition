@@ -9,7 +9,6 @@ n_nodes_hl3 = 500
 n_classes = 10
 batch_size = 100
 
-LOGDIR = './logs/tensorboard2/'
 
 with tf.name_scope('input'):
   x = tf.placeholder('float', [None, 784], name='x')
