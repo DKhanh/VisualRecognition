@@ -10,6 +10,9 @@ n_classes = 10
 batch_size = 100
 
 
+LOGDIR = './logs/tensorboard_out_none/'
+
+
 with tf.name_scope('input'):
   x = tf.placeholder('float', [None, 784], name='x')
   y = tf.placeholder('float', name='y')
@@ -29,11 +32,11 @@ def variable_summaries(var):
 def add_layer(input, in_size, out_size, activation_function=None):
     with tf.name_scope('weights'):
       w = tf.Variable(tf.random_normal([in_size, out_size]), name='W')
-      # variable_summaries(w)
+      tf.summary.histogram('W', w)
 
     with tf.name_scope('biases'):
       b = tf.Variable(tf.random_normal([out_size]), name='b')
-      # variable_summaries(b)
+      tf.summary.histogram('b', b)
 
     with tf.name_scope('out'):
       pre_l = tf.add(tf.matmul(input,w), b)
@@ -41,7 +44,7 @@ def add_layer(input, in_size, out_size, activation_function=None):
         output = pre_l
       else:
         output = activation_function(pre_l) 
-      tf.summary.histogram('out', output)
+      #tf.summary.histogram('out', output)
     return output
 
 
@@ -65,9 +68,6 @@ def train_neural_network(x):
     hm_epochs = 10
     sess = tf.InteractiveSession()
     prediction = neural_network_model(x)
-    # OLD VERSION:
-    #cost = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(prediction,y) )
-    # NEW:
 
     with tf.name_scope('cost'):
       cost = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=y))
@@ -98,7 +98,6 @@ def train_neural_network(x):
 
         print('Epoch', epoch, 'completed out of',hm_epochs,'loss:',epoch_loss)
 
-    
     print('Accuracy:',accuracy.eval({x:mnist.test.images, y:mnist.test.labels}))
 
 
