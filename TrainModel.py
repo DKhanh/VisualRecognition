@@ -1,12 +1,14 @@
 ﻿import cv2
 import numpy as np
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 from random import shuffle
 from tqdm import tqdm
 import tensorflow as tf
 import matplotlib.pyplot as plt
+
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("/tmp/data/", one_hot = True)
+mnist = input_data.read_data_sets("./MNIST_data/", one_hot = True)
 
 n_nodes_hl1 = 500
 n_nodes_hl2 = 500
@@ -126,6 +128,7 @@ def train_neural_network(x):
             summary, _, c = sess.run([merged ,optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
             epoch_loss += c
             writer.add_summary(summary, i)
+            print('Epoch', i, 'completed out of',hm_epochs,'loss:',c)
 
         print('Epoch', epoch, 'completed out of',hm_epochs,'loss:',epoch_loss)
         saver.save(sess, MODEL_NAME)

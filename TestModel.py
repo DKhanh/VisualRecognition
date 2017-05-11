@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 from random import shuffle
 from tqdm import tqdm
 import tensorflow as tf
@@ -8,7 +9,7 @@ import matplotlib.pyplot as plt
 
 IMG_SIZE = 28
 LR = 1e-3
-TEST_DIR = "./Test/test2/"
+TEST_DIR = "./Object/"
 LOGDIR = './logs/tensorboard_out_none/'
 MODEL_NAME = "./saved_model/model.ckpt"
 
@@ -50,7 +51,7 @@ def test_data():
   np.save("./Test/test_data.npy", testing_data)
   return testing_data
 
-test_data()
+# test_data()
 
 def neural_network_model(data):
 	w1 = hidden_1_layer['weights']
@@ -87,10 +88,10 @@ def test_model():
     prediction_test = neural_network_model(x)  
     accuracy_test =  tf.argmax(neural_network_model(x), 1)
 
-    for num, data in enumerate(test_data[:24]):
+    for num, data in enumerate(test_data[:100]):
       img_data = data[0]
 
-      sub_plot = fig.add_subplot(4, 6, num+1)
+      sub_plot = fig.add_subplot(5, 20, num+1)
       orig = img_data
       data = img_data.reshape(1, IMG_SIZE*IMG_SIZE)
       model_out = sess.run(tf.argmax(prediction_test, 1), feed_dict = {x:data})
