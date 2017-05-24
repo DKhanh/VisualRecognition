@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 IMAGE = './Test/sample2.png'
 DIRNAME = './Object/'
-IMG_SIZE = 28
+IMG_SIZE = 24
 
 img = cv2.imread(IMAGE)
 
@@ -35,6 +35,7 @@ for c in contours:
 	if w>IMG_SIZE and h>IMG_SIZE:
 		idx+=1
 		new_img=img[y:y+h,x:x+w]
+		
 		file_name = str(idx) + '.png'
 		cv2.imwrite(os.path.join(DIRNAME, file_name), new_img)
 

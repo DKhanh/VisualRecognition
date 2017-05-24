@@ -1,3 +1,4 @@
+# import cv2
 import numpy as np
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
@@ -15,9 +16,9 @@ if not os.path.exists("./cifar_10"):
   os.makedirs("./cifar_10")
 cifar10.data_path = "./cifar_10"
 
-# cifar10.maybe_download_and_extract()
-# images_train, cls_number_train, labels_train =  cifar10.load_training_data()
-# images_test,  cls_number_test,  labels_test  = cifar10.load_test_data()
+cifar10.maybe_download_and_extract()
+images_train, cls_number_train, labels_train =  cifar10.load_training_data()
+images_test,  cls_number_test,  labels_test  = cifar10.load_test_data()
 
 from cifar10 import img_size, num_channels, num_classes
 img_size_cropped = 24
@@ -81,6 +82,21 @@ def pre_process(images, training):
     return images
 
 
+def random_batch():
+    # Number of images in the training-set.
+    num_images = len(images_train)
+
+    # Create a random index.
+    idx = np.random.choice(num_images,
+                           size=train_batch_size,
+                           replace=False)
+
+    # Use the random index to select random images and labels.
+    x_batch = images_train[idx, :, :, :]
+    y_batch = labels_train[idx, :]
+
+    return x_batch, y_batch
+
 def convolution_neural_network(images, training):
   x_pretty = pt.wrap(images)
 
@@ -111,10 +127,83 @@ def convolution_neural_network(images, training):
 
 def create_network(training):
   with tf.device("/cpu:0"):
-    with tf.variable_scope('network', reuse=None):
+    with tf.variable_scope('network', reuse=not training):
       images = x
       images = pre_process(images=images, training=training)
 
       y_pred, loss = convolution_neural_network(images=images, training=training)
 
   return y_pred, loss
+
+
+
+def train_network(training, num_iterations):
+  sess = tf.InteractiveSession(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=True))
+
+  _, loss = create_network(training=True)
+  y_pred, _ = create_network(training=False)
+
+  optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss, 
+                                  global_step=global_step)
+  
+  correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y_true, 1))
+  accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+  saver = tf.train.Saver()
+  try:
+      print("============================================> 1111Trying to restore last checkpoint ...")
+
+      last_chk_path = tf.train.latest_checkpoint(checkpoint_dir=MODEL_DIR)
+
+      # Try and load the data in the checkpoint.
+      saver.restore(sess, save_path=last_chk_path)
+
+      # If we get to this point, the checkpoint was successfully loaded.
+      print("============================================> Restored checkpoint from:", MODEL_DIR)
+  except:
+      # If the above failed for some reason, simply
+      # initialize all the variables for the TensorFlow graph.
+      print("============================================> Failed to restore checkpoint. Initializing variables instead.")
+      tf.global_variables_initializer().run() 
+
+  start_time = time.time()
+
+  for i in range(num_iterations):
+    x_batch, y_batch = random_batch()
+    feed_dict_train = {x: x_batch,
+                       y_true: y_batch}
+
+    i_global, _ = sess.run([global_step, optimizer], feed_dict=feed_dict_train)
+
+    if (i_global%100 == 0) or (i == num_iterations - 1):
+      batch_accuracy = sess.run(accuracy, feed_dict_train)
+      print(batch_accuracy)
+      if batch_accuracy > 0.98:
+        saver.save(sess, save_path=MODEL_NAME, global_step=global_step)
+        break
+
+      # Print status.
+      # print('Global Step: ', i_global, '===> Accuracy: ', accuracy)
+      msg = "Global Step: {0:>6}, Training Batch Accuracy: {1:>6.1%}"
+      print(msg.format(i_global, batch_accuracy))
+
+    # Save a checkpoint to disk every 1000 iterations (and last).
+    if (i_global%1000 == 0) or (i == num_iterations-1):
+      saver.save(sess, save_path=MODEL_NAME, global_step=global_step)
+      print("Saved checkpoint.")
+
+  end_time = time.time()
+
+  time_dif = end_time - start_time
+
+  print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
+
+
+train_network(training=True, num_iterations=20000)
+
+
+
+
+
+
+
