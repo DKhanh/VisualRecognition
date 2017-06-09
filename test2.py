@@ -12,17 +12,10 @@ import pickle
 import prettytensor as pt
 from cifarModel import create_network, global_step, x, y_true, img_size, num_channels, class_names
 
-TEST_DIR = './testCifar'
-LOGDIR = './logs/cifar_cnn/tensorboard/'
-if not os.path.exists(LOGDIR):
-  os.makedirs(LOGDIR)
-MODEL_NAME = "./saved_model/cifar_cnn/cnn_model.ckpt"
-MODEL_DIR = "./saved_model/cifar_cnn"
-if not os.path.exists(MODEL_DIR):
-  os.makedirs(MODEL_DIR)
+MODEL_NAME = "./saved_model/cifar_cnn2/cnn_model.ckpt"
+MODEL_DIR = "./saved_model/cifar_cnn2"
 
-IMAGE = "./testCifar/dog_cat_2.jpg"
-DIRNAME = './testImg/'
+IMAGE = "./localizeObj/shipCar_1.jpg"
 IMG_SIZE=100
 thres = 76
 global sess
@@ -66,6 +59,7 @@ def predict(img):
   feed_dict = {x:img}
 
   sample_pred_cls, sample_pred = sess.run([y_pred_cls, y_pred], feed_dict=feed_dict)
+  np.set_printoptions(precision=3, suppress=True)
   print('sample_pred = ', sample_pred)
   print('sample_pred_cls = ', sample_pred_cls , 'true label: ', class_names[sample_pred_cls[0]])
   return class_names[sample_pred_cls[0]]

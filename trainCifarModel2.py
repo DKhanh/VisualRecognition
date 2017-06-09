@@ -23,6 +23,7 @@ images_test,  cls_number_test,  labels_test  = cifar10.load_test_data()
 from cifar10 import img_size, num_channels, num_classes
 img_size_cropped = 24
 train_batch_size = 100
+test_batch_size = 500
 class_names = cifar10.load_class_names()
 #  CLASS_NAME
 # [0: 'airplane',
@@ -40,8 +41,8 @@ class_names = cifar10.load_class_names()
 LOGDIR = './logs/CIFAR-10/tensorboard/'
 if not os.path.exists(LOGDIR):
   os.makedirs(LOGDIR)
-MODEL_NAME = "./saved_model/cifar_cnn/cnn_model.ckpt"
-MODEL_DIR = "./saved_model/cifar_cnn"
+MODEL_NAME = "./saved_model/cifar_cnn2/cnn_model.ckpt"
+MODEL_DIR = "./saved_model/cifar_cnn2"
 if not os.path.exists(MODEL_DIR):
   os.makedirs(MODEL_DIR)
 
@@ -95,6 +96,21 @@ def random_batch():
 
     return x_batch, y_batch
 
+def random_test_batch():
+    # Number of images in the training-set.
+    num_images = len(images_test)
+
+    # Create a random index.
+    idx = np.random.choice(num_images,
+                           size=test_batch_size,
+                           replace=False)
+
+    # Use the random index to select random images and labels.
+    x_batch = images_test[idx, :, :, :]
+    y_batch = labels_test[idx, :]
+
+    return x_batch, y_batch
+
 def convolution_neural_network(images, training):
   x_pretty = pt.wrap(images)
 
@@ -124,7 +140,7 @@ def convolution_neural_network(images, training):
   return y_pred, loss
 
 def create_network(training):
-  with tf.device("/cpu:0"):
+  with tf.device("/gpu:0"):
     with tf.variable_scope('network', reuse=not training):
       images = x
       images = pre_process(images=images, training=training)
@@ -159,7 +175,7 @@ def train_network(training, num_iterations):
   saver = tf.train.Saver()
 
   try:
-      print("============================================> 1111Trying to restore last checkpoint ...")
+      print("============================================> Trying to restore last checkpoint ...")
 
       last_chk_path = tf.train.latest_checkpoint(checkpoint_dir=MODEL_DIR)
 
@@ -185,12 +201,15 @@ def train_network(training, num_iterations):
     writer.add_summary(summary, i_global)
 
     if (i_global%100 == 0) or (i == num_iterations - 1):
-      batch_accuracy = sess.run(accuracy, feed_dict_train)
+      x_test_batch, y_test_batch = random_test_batch()
+      feed_dict_test = {x: x_test_batch,
+                        y_true: y_test_batch}
+      batch_accuracy = sess.run(accuracy, feed_dict_test)
       print(batch_accuracy)
-      if batch_accuracy > 0.98:
+      if batch_accuracy > 0.88:
         saver.save(sess, save_path=MODEL_NAME, global_step=global_step)
         break
-
+ 
       # Print status.
       # print('Global Step: ', i_global, '===> Accuracy: ', accuracy)
       msg = "Global Step: {0:>6}, Training Batch Accuracy: {1:>6.1%}"

@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 from random import shuffle
 from tqdm import tqdm
 from datetime import timedelta
@@ -17,9 +16,9 @@ if not os.path.exists("./cifar_10"):
   os.makedirs("./cifar_10")
 cifar10.data_path = "./cifar_10"
 
-# cifar10.maybe_download_and_extract()
-# images_train, cls_number_train, labels_train =  cifar10.load_training_data()
-# images_test,  cls_number_test,  labels_test  = cifar10.load_test_data()
+cifar10.maybe_download_and_extract()
+images_train, cls_number_train, labels_train =  cifar10.load_training_data()
+images_test,  cls_number_test,  labels_test  = cifar10.load_test_data()
 
 # cls_number_train have type: [0], [3], ...
 # labels_train have type: [1 0 0 0 0 0 0 0 0 0], ...
@@ -40,14 +39,13 @@ TEST_DIR = './testCifar'
 LOGDIR = './logs/cifar_cnn/tensorboard/'
 if not os.path.exists(LOGDIR):
   os.makedirs(LOGDIR)
-MODEL_NAME = "./saved_model/cifar_cnn/cnn_model.ckpt"
-MODEL_DIR = "./saved_model/cifar_cnn"
+MODEL_NAME = "./saved_model/cifar_cnn2/cnn_model.ckpt"
+MODEL_DIR = "./saved_model/cifar_cnn2"
 if not os.path.exists(MODEL_DIR):
   os.makedirs(MODEL_DIR)
 
 def plot_images(images, cls_true=None, cls_pred=None, smooth=True):
   # assert len(images) == len(cls_true) == 9
-
   fig, axes = plt.subplots(3, 3)
 
   if cls_pred is None:
@@ -57,13 +55,16 @@ def plot_images(images, cls_true=None, cls_pred=None, smooth=True):
   fig.subplots_adjust(hspace=hspace, wspace=0.3)
 
   for i, ax in enumerate(axes.flat):
+    max_dimension = max(images[i, :, :, :].shape)
+    scale = 700/max_dimension
+    img = cv2.resize(images[i, :, :, :], None, fx=scale, fy=scale)
     if smooth:
       interpolation = 'spline16'
     else:
       interpolation = 'nearest'
 
     # Plot image
-    ax.imshow(images[i, :, :, :], 
+    ax.imshow(img, 
       interpolation=interpolation)
 
     # Name of the true class
@@ -87,17 +88,6 @@ def plot_images(images, cls_true=None, cls_pred=None, smooth=True):
 
   plt.show()
 
-def get_test_batch(start):
-  num_images = len(images_test)
-
-  # Create a random index.
-  idx = np.random.choice(num_images,
-                         size=9,
-                         replace=False)
-  sample_images = images_test[idx, :]
-  sample_true_label = labels_test[idx, :]
-  sample_true_cls = cls_number_test[idx]
-  return sample_images, sample_true_cls, sample_true_label
 
 def label_img(img):
     word_label = img.split('_')[-2]
@@ -111,7 +101,6 @@ def label_img(img):
     elif word_label == 'horse': return 7
     elif word_label == 'ship': return 8
     elif word_label == 'truck': return 9
-    
 
 def load_test_data():
   testing_data = []
@@ -127,8 +116,20 @@ def load_test_data():
   np.save("./testCifar/test_data.npy", testing_data)
   return testing_data
 
+def get_test_batch(start):
+  num_images = len(images_test)
+
+  # Create a random index.
+  idx = np.random.choice(num_images,
+                         size=9,
+                         replace=False)
+  sample_images = images_test[idx, :]
+  sample_true_label = labels_test[idx, :]
+  sample_true_cls = cls_number_test[idx]
+  return sample_images, sample_true_cls, sample_true_label
+
 def get_test_data():
-  test_data = np.load('./testCifar/test_data.npy')
+  test_data = np.load('./test_data.npy')
   sample_images = np.array([i[0] for i in test_data])
   sample_true_cls = np.array([i[1] for i in test_data])
   sample_images = np.reshape(sample_images, [-1, img_size, img_size, num_channels])
@@ -156,7 +157,7 @@ def test_network():
 
   saver = tf.train.Saver()
   try:
-      print("============================================>111 Trying to restore last checkpoint ...")
+      print("============================================>Trying to restore last checkpoint ...")
 
       last_chk_path = tf.train.latest_checkpoint(checkpoint_dir=MODEL_DIR)
 
@@ -182,8 +183,9 @@ def test_network():
   feed_dict = {x: sample_images}
 
   # Calculate the predicted class using TensorFlow.
-  sample_pred_cls = sess.run(y_pred_cls, feed_dict=feed_dict)
-
+  sample_pred_cls, sample_pred = sess.run([y_pred_cls,y_pred], feed_dict=feed_dict)
+  # np.set_printoptions(precision=1, suppress=True)
+  print(sample_pred)
   plot_images(images=sample_images,
               cls_true=sample_true_cls,
               cls_pred=sample_pred_cls)

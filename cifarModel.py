@@ -2,7 +2,6 @@ import numpy as np
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 from random import shuffle
-from tqdm import tqdm
 from datetime import timedelta
 import tensorflow as tf
 import matplotlib.pyplot as plt
